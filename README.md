@@ -9,3 +9,4 @@
 - DO NOT CHANGE the contents of `config.txt`
 - DO NOT CHANGE the contents of any `.csv` files
 - DO NOT CHANGE the names of any files
+- DO NOT ADD OR REMOVE any files
