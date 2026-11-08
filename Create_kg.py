@@ -245,11 +245,11 @@ def create_knowledge_graph_nodes(driver):
 
     print("Knowledge Graph node creation completed successfully!")
 
-    def resetDatabase():
-        #reset the database if something went wrong'''
-        with driver.session(database=DATABASE) as session:
-            session.run("MATCH (n) DETACH DELETE n")
-            print("Database cleared successfully!")
+def resetDatabase():
+    #reset the database if something went wrong'''
+    with driver.session(database=DATABASE) as session:
+        session.run("MATCH (n) DETACH DELETE n")
+        print("Database cleared successfully!")
 
 if __name__ == "__main__":
     with GraphDatabase.driver(URI, auth=AUTH) as driver:
