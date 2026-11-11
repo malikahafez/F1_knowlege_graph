@@ -245,7 +245,7 @@ def create_knowledge_graph_nodes(driver):
 
     print("Knowledge Graph node creation completed successfully!")
 
-def resetDatabase():
+def resetDatabase(driver):
     #reset the database if something went wrong'''
     with driver.session(database=DATABASE) as session:
         session.run("MATCH (n) DETACH DELETE n")
