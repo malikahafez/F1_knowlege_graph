@@ -243,7 +243,120 @@ def create_knowledge_graph_nodes(driver):
                     SET p += $props
                 """, eventId=event_id, props=props)
 
+        # --- RACE RELATIONSHIPS ---
+        with open("races.csv", mode="r", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                race_id = clean_int(row["raceId"])
+                circuit_id = clean_int(row["circuitId"])
+                year = clean_int(row["year"])
+
+                if race_id is not None and circuit_id is not None:
+                    session.run("""
+                        MATCH (r:Race {raceId: $race_id})
+                        MATCH (c:Circuit {circuitId: $circuit_id})
+                        MERGE (r)-[:AT_CIRCUIT]->(c)
+                    """, race_id=race_id, circuit_id=circuit_id)
+
+                if race_id is not None and year is not None:
+                    session.run("""
+                        MATCH (r:Race {raceId: $race_id})
+                        MATCH (s:Season {year: $year})
+                        MERGE (r)-[:IN_SEASON]->(s)
+                    """, race_id=race_id, year=year)
+
+        # --- RESULT RELATIONSHIPS ---
+        with open("results.csv", mode="r", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                result_id = clean_int(row["resultId"])
+                race_id = clean_int(row["raceId"])
+                driver_id = clean_int(row["driverId"])
+                constructor_id = clean_int(row["constructorId"])
+                status_id = clean_int(row["statusId"])
+
+                if result_id is not None and race_id is not None:
+                    session.run("""
+                        MATCH (res:Result {resultId: $result_id})
+                        MATCH (r:Race {raceId: $race_id})
+                        MERGE (res)-[:FOR_RACE]->(r)
+                    """, result_id=result_id, race_id=race_id)
+
+                if result_id is not None and driver_id is not None:
+                    session.run("""
+                        MATCH (res:Result {resultId: $result_id})
+                        MATCH (d:Driver {driverId: $driver_id})
+                        MERGE (res)-[:BY_DRIVER]->(d)
+                    """, result_id=result_id, driver_id=driver_id)
+
+                if result_id is not None and constructor_id is not None:
+                    session.run("""
+                        MATCH (res:Result {resultId: $result_id})
+                        MATCH (c:Constructor {constructorId: $constructor_id})
+                        MERGE (res)-[:FOR_CONSTRUCTOR]->(c)
+                    """, result_id=result_id, constructor_id=constructor_id)
+
+                if result_id is not None and status_id is not None:
+                    session.run("""
+                        MATCH (res:Result {resultId: $result_id})
+                        MATCH (st:Status {statusId: $status_id})
+                        MERGE (res)-[:HAS_STATUS]->(st)
+                    """, result_id=result_id, status_id=status_id)
+
+        # --- QUALIFYING RELATIONSHIPS ---
+        with open("qualifying.csv", mode="r", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                qualify_id = clean_int(row["qualifyId"])
+                race_id = clean_int(row["raceId"])
+                driver_id = clean_int(row["driverId"])
+                constructor_id = clean_int(row["constructorId"])
+
+                if qualify_id is not None and race_id is not None:
+                    session.run("""
+                        MATCH (q:Qualifying {qualifyId: $qualify_id})
+                        MATCH (r:Race {raceId: $race_id})
+                        MERGE (q)-[:FOR_RACE]->(r)
+                    """, qualify_id=qualify_id, race_id=race_id)
+
+                if qualify_id is not None and driver_id is not None:
+                    session.run("""
+                        MATCH (q:Qualifying {qualifyId: $qualify_id})
+                        MATCH (d:Driver {driverId: $driver_id})
+                        MERGE (q)-[:BY_DRIVER]->(d)
+                    """, qualify_id=qualify_id, driver_id=driver_id)
+
+                if qualify_id is not None and constructor_id is not None:
+                    session.run("""
+                        MATCH (q:Qualifying {qualifyId: $qualify_id})
+                        MATCH (c:Constructor {constructorId: $constructor_id})
+                        MERGE (q)-[:FOR_CONSTRUCTOR]->(c)
+                    """, qualify_id=qualify_id, constructor_id=constructor_id)
+
+        # --- PIT STOP RELATIONSHIPS ---
+        with open("pit_stops.csv", mode="r", encoding="utf-8") as f:
+            for row in csv.DictReader(f):
+                race_id_raw = row["raceId"]
+                driver_id_raw = row["driverId"]
+                stop_raw = row["stop"]
+                event_id = f"{race_id_raw}:{driver_id_raw}:{stop_raw}"
+
+                race_id = clean_int(race_id_raw)
+                driver_id = clean_int(driver_id_raw)
+
+                if race_id is not None:
+                    session.run("""
+                        MATCH (p:PitStop {eventId: $event_id})
+                        MATCH (r:Race {raceId: $race_id})
+                        MERGE (p)-[:FOR_RACE]->(r)
+                    """, event_id=event_id, race_id=race_id)
+
+                if driver_id is not None:
+                    session.run("""
+                        MATCH (p:PitStop {eventId: $event_id})
+                        MATCH (d:Driver {driverId: $driver_id})
+                        MERGE (p)-[:BY_DRIVER]->(d)
+                    """, event_id=event_id, driver_id=driver_id) 
+
     print("Knowledge Graph node creation completed successfully!")
+    print("Relations between nodes have been established.")
 
 def resetDatabase(driver):
     #reset the database if something went wrong'''
